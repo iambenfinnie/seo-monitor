@@ -25,19 +25,11 @@ jobs:
 
       - name: Run rank tracker
         run: node tracker.js
-        env:
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          REPORT_EMAIL: ${{ secrets.REPORT_EMAIL }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Send report
         run: node reporter.js
         env:
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          REPORT_EMAIL: ${{ secrets.REPORT_EMAIL }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
       - name: Commit rank history and snapshot
         run: |
