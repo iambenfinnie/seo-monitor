@@ -8,6 +8,8 @@ on:
 jobs:
   track:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +43,7 @@ jobs:
         run: |
           git config user.name "seo-monitor[bot]"
           git config user.email "seo-monitor@noreply"
-          git add rank-history.json snapshot-*.json screenshots/ || true
+          git add rank-history.json screenshots/ || true
+          git add -f snapshot-*.json || true
           git diff --cached --quiet || git commit -m "chore: rank snapshot $(date +%Y-%m-%d)"
           git push
