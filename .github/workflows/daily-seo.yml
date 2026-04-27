@@ -1,0 +1,46 @@
+name: Daily SEO Rank Tracker
+
+on:
+  schedule:
+    - cron: '0 13 * * *'  # 9 AM EST daily
+  workflow_dispatch:       # allow manual runs from GitHub UI
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run rank tracker
+        run: node tracker.js
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          REPORT_EMAIL: ${{ secrets.REPORT_EMAIL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Send report
+        run: node reporter.js
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          REPORT_EMAIL: ${{ secrets.REPORT_EMAIL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Commit rank history and snapshot
+        run: |
+          git config user.name "seo-monitor[bot]"
+          git config user.email "seo-monitor@noreply"
+          git add rank-history.json snapshot-*.json screenshots/ || true
+          git diff --cached --quiet || git commit -m "chore: rank snapshot $(date +%Y-%m-%d)"
+          git push

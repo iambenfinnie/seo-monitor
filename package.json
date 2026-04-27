@@ -1,0 +1,15 @@
+{
+  "name": "seo-monitor",
+  "version": "1.0.0",
+  "description": "Daily SEO rank tracker and competitor screenshot tool",
+  "main": "tracker.js",
+  "scripts": {
+    "track": "node tracker.js",
+    "report": "node reporter.js"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0",
+    "nodemailer": "^6.9.13",
+    "dotenv": "^16.4.5"
+  }
+}
