@@ -1,7 +1,7 @@
-require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const { Resend } = require('resend');
+const RankData = require('./dashboard/rank-data');
+const { escapeHtml } = RankData;
 
 function today() {
   return new Date().toISOString().split('T')[0];
@@ -22,18 +22,26 @@ function changeStr(change) {
   return '—';
 }
 
-function buildReport(results) {
-  const date = today();
+function buildReport(results, date = today(), latest = null) {
+  const summary = RankData.summarize(results);
   let text = `SEO RANK REPORT — ${date}\n${'='.repeat(50)}\n\n`;
   let html = `
     <div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;color:#222">
     <h2 style="border-bottom:2px solid #D4A017;padding-bottom:8px">SEO Rank Report — ${date}</h2>
   `;
 
+  const statusText = `Collection: ${summary.status}. Usable checks: ${summary.successful}/${summary.total}. Failed or unverified checks are not ranking results.`;
+  if (latest?.error) {
+    text += `Collection error: ${latest.error.message}\n`;
+    html += `<p>Collection error: ${escapeHtml(latest.error.message)}</p>`;
+  }
+  text += statusText + '\nGoogle web results: US, desktop; not city-localized. Positions count observed organic links, not a guaranteed top-30 search depth.\n\n';
+  html += `<p><strong>${escapeHtml(statusText)}</strong></p><p>Google web results: US, desktop; not city-localized. Positions count observed organic links, not a guaranteed top-30 search depth.</p>`;
+
   for (const [site, data] of Object.entries(results)) {
     text += `${site.toUpperCase()}\n${'-'.repeat(40)}\n`;
     html += `
-      <h3 style="margin-top:28px;color:#333">${site}</h3>
+      <h3 style="margin-top:28px;color:#333">${escapeHtml(site)}</h3>
       <table style="width:100%;border-collapse:collapse;font-size:14px">
         <thead>
           <tr style="background:#f5f5f5">
@@ -47,21 +55,23 @@ function buildReport(results) {
     `;
 
     for (const [keyword, d] of Object.entries(data.keywords)) {
-      const rank = d.rank ? `#${d.rank}` : 'Not found';
-      const change = changeStr(d.change);
-      const emoji = rankEmoji(d.rank);
-      const topComp = Object.entries(d.competitors || {}).sort((a, b) => a[1] - b[1])[0];
+      const rank = RankData.label(d);
+      const valid = RankData.valid(d);
+      const change = valid ? changeStr(d.change) : 'unknown';
+      const emoji = valid ? rankEmoji(d.rank) : '⚠️';
+      const topComp = Object.entries(valid ? (d.competitors || {}) : {}).sort((a, b) => a[1] - b[1])[0];
       const compStr = topComp ? `${topComp[0]} (#${topComp[1]})` : '—';
       const rowBg = d.change > 0 ? '#f0fff4' : d.change < 0 ? '#fff5f5' : '#fff';
 
       text += `  ${emoji} ${keyword.padEnd(45)} ${rank.padEnd(10)} ${change}\n`;
       text += `     Top competitor: ${compStr}\n`;
+      if (!valid) text += `     ${d.error?.message || 'Legacy or missing measurement evidence.'}\n`;
       html += `
         <tr style="background:${rowBg}">
-          <td style="padding:8px;border:1px solid #ddd">${keyword}</td>
-          <td style="text-align:center;padding:8px;border:1px solid #ddd">${emoji} ${rank}</td>
+          <td style="padding:8px;border:1px solid #ddd">${escapeHtml(keyword)}</td>
+          <td style="text-align:center;padding:8px;border:1px solid #ddd">${emoji} ${escapeHtml(rank)}${!valid ? `<br><small>${escapeHtml(d.error?.message || 'Legacy or missing measurement evidence.')}</small>` : ''}</td>
           <td style="text-align:center;padding:8px;border:1px solid #ddd">${change}</td>
-          <td style="padding:8px;border:1px solid #ddd;font-size:12px;color:#666">${compStr}</td>
+          <td style="padding:8px;border:1px solid #ddd;font-size:12px;color:#666">${escapeHtml(compStr)}</td>
         </tr>
       `;
     }
@@ -87,6 +97,7 @@ async function sendEmail(date, text, html) {
     return;
   }
 
+  const { Resend } = require('resend');
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { error } = await resend.emails.send({
     from: 'SEO Monitor <Ben@sevengensystems.com>',
@@ -97,14 +108,26 @@ async function sendEmail(date, text, html) {
   });
 
   if (error) {
-    console.error('Email failed:', error);
+    throw new Error(`Email failed: ${error.message || JSON.stringify(error)}`);
   } else {
     console.log('Report emailed to Ben@sevengensystems.com');
   }
 }
 
+function validateAttempt(latest, env = process.env) {
+  if (env.GITHUB_RUN_ID) {
+    const expected = `${env.GITHUB_RUN_ID}:${env.GITHUB_RUN_ATTEMPT || '1'}`;
+    if (latest?.attemptId !== expected) throw new Error('No snapshot from this workflow attempt; refusing to send an earlier report.');
+  }
+  if (!latest || !/^\d{4}-\d{2}-\d{2}$/.test(latest.date) || !Number.isFinite(Date.parse(latest.finishedAt))) throw new Error('Missing or invalid collection metadata.');
+  if (Date.parse(latest.finishedAt) - Date.now() > 5 * 60 * 1000) throw new Error('Collection timestamp is in the future.');
+  if (Date.now() - Date.parse(latest.finishedAt) > 60 * 60 * 1000) throw new Error('Latest collection is stale; refusing to email it as a new report.');
+}
 async function run() {
-  const date = today();
+  const latestFile = path.join(__dirname, 'latest-run.json');
+  const latest = fs.existsSync(latestFile) ? JSON.parse(fs.readFileSync(latestFile, 'utf8')) : null;
+  validateAttempt(latest);
+  const date = latest.date;
   const snapshotFile = path.join(__dirname, `snapshot-${date}.json`);
 
   if (!fs.existsSync(snapshotFile)) {
@@ -113,8 +136,12 @@ async function run() {
   }
 
   const results = JSON.parse(fs.readFileSync(snapshotFile, 'utf8'));
-  const { text, html } = buildReport(results);
+  const { text, html } = buildReport(results, date, latest);
   await sendEmail(date, text, html);
 }
 
-run().catch(console.error);
+if (require.main === module) {
+  require('dotenv').config();
+  run().catch(err => { console.error(err); process.exitCode = 1; });
+}
+module.exports = {buildReport, sendEmail, validateAttempt};

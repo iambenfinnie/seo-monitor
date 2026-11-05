@@ -1,155 +1,162 @@
-require('dotenv').config();
-const { chromium } = require('playwright');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
+const RankData = require('./dashboard/rank-data');
 
-const KEYWORDS_FILE = path.join(__dirname, 'keywords.json');
-const HISTORY_FILE = path.join(__dirname, 'rank-history.json');
-const SCREENSHOTS_DIR = path.join(__dirname, 'screenshots');
+const RESULTS_TO_CHECK = 30;
+const DELAY_MS = 3000;
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const today = () => new Date().toISOString().slice(0, 10);
+const failure = (code, message) => ({status: 'error', rank: null, competitors: {}, resultsChecked: 0, error: {code, message}});
 
-const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
-const RESULTS_TO_CHECK = 30; // check top 30 results per keyword
-const DELAY_MS = 3000; // delay between searches to avoid rate limiting
-
-function loadHistory() {
-  if (!fs.existsSync(HISTORY_FILE)) return {};
-  return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+function normalizeHost(value) {
+  return new URL(value.includes('://') ? value : `https://${value}`).hostname.toLowerCase().replace(/^www\./, '');
+}
+function matchesSite(url, site) {
+  const host = normalizeHost(url), target = normalizeHost(site);
+  return host === target || host.endsWith(`.${target}`);
+}
+function classifyResults(urls, targetSite) {
+  const results = [];
+  const seen = new Set();
+  for (const href of urls) {
+    try {
+      const url = new URL(href);
+      if (!['http:', 'https:'].includes(url.protocol)) continue;
+      const host = normalizeHost(url.href);
+      if (host === 'google.com' || host.endsWith('.google.com')) continue;
+      url.hash = '';
+      if (seen.has(url.href)) continue;
+      seen.add(url.href);
+      results.push(url.href);
+    } catch { /* Invalid links cannot be rank observations. */ }
+    if (results.length === RESULTS_TO_CHECK) break;
+  }
+  if (!results.length) return failure('no_organic_results', 'No organic result links were extracted. Ranking is unknown.');
+  const position = results.findIndex(url => matchesSite(url, targetSite));
+  const competitors = {};
+  results.forEach((url, i) => { const host = normalizeHost(url); if (!matchesSite(url, targetSite) && !Object.hasOwn(competitors, host)) competitors[host] = i + 1; });
+  return {status: 'ok', rank: position < 0 ? null : position + 1, competitors,
+    resultsChecked: results.length, organicResults: results, error: null};
 }
 
-function saveHistory(history) {
-  fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+function extractGooglePage() {
+      const blocked = location.pathname.startsWith('/sorry') || Boolean(document.querySelector('#captcha-form, .g-recaptcha, iframe[src*="recaptcha"]'));
+      const consent = location.hostname === 'consent.google.com' || Boolean(document.querySelector('form[action*="consent.google"]'));
+      const links = Array.from(document.querySelectorAll('#search a:has(h3), #rso a:has(h3)'))
+        .filter(a => !a.closest('#tads, #bottomads, [data-text-ad], [data-pla]'))
+        .map(a => a.href);
+      return {blocked, consent, links};
 }
 
-function today() {
-  return new Date().toISOString().split('T')[0];
-}
-
-async function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
-
-async function searchGoogle(browser, keyword, targetSite) {
-  const page = await browser.newPage();
-  await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' });
-  await page.setViewportSize({ width: 1280, height: 900 });
-
-  const query = encodeURIComponent(keyword);
-  const url = `https://www.google.com/search?q=${query}&num=${RESULTS_TO_CHECK}&hl=en&gl=us`;
-
+async function searchGoogle(browser, keyword, targetSite, wait = sleep) {
+  let page;
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await sleep(1500);
-
-    // Extract organic result URLs
-    const results = await page.evaluate(() => {
-      const anchors = Array.from(document.querySelectorAll('div.g a[href^="http"], div[data-sokoban-container] a[href^="http"]'));
-      return anchors
-        .map(a => a.href)
-        .filter(href => !href.includes('google.com') && !href.includes('youtube.com'))
-        .slice(0, 30);
-    });
-
-    // Find position of target site
-    const position = results.findIndex(url => url.includes(targetSite));
-    const rank = position === -1 ? null : position + 1;
-
-    // Find which competitors appear and at what rank
-    const competitorRanks = {};
-    results.forEach((url, i) => {
-      const domain = new URL(url).hostname.replace('www.', '');
-      if (!competitorRanks[domain]) competitorRanks[domain] = i + 1;
-    });
-
-    await page.close();
-    return { rank, competitors: competitorRanks, resultsChecked: results.length };
+    page = await browser.newPage();
+    await page.setExtraHTTPHeaders({'Accept-Language':'en-US,en;q=0.9'});
+    await page.setViewportSize({width:1280,height:900});
+    const response = await page.goto(`https://www.google.com/search?q=${encodeURIComponent(keyword)}&num=${RESULTS_TO_CHECK}&hl=en&gl=us`,
+      {waitUntil:'domcontentloaded',timeout:30000});
+    if (!response || response.status() >= 400) return failure('http_error', `Search returned HTTP ${response ? response.status() : 'unknown'}.`);
+    await wait(1500);
+    const observation = await page.evaluate(extractGooglePage);
+    if (observation.blocked) return failure('blocked', 'Google returned a challenge. No ranking was measured.');
+    if (observation.consent) return failure('consent_required', 'Google returned a consent page. No ranking was measured.');
+    return classifyResults(observation.links, targetSite);
   } catch (err) {
-    await page.close();
-    return { rank: null, competitors: {}, error: err.message };
+    return failure('request_failed', String(err.message).slice(0, 500));
+  } finally {
+    if (page) await page.close().catch(() => {});
   }
 }
 
-async function screenshotCompetitor(browser, domain, screenshotsDir) {
-  const page = await browser.newPage();
-  await page.setViewportSize({ width: 1280, height: 900 });
-  const file = path.join(screenshotsDir, `${domain.replace(/\./g, '_')}.png`);
+async function screenshotCompetitor(browser, domain, screenshotsDir, wait = sleep) {
+  let page;
+  const file = path.join(screenshotsDir, `${domain.replace(/\./g,'_')}.png`);
   try {
-    await page.goto(`https://${domain}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await sleep(1000);
-    await page.screenshot({ path: file, fullPage: false });
-  } catch (err) {
-    // skip if site unreachable
-  }
-  await page.close();
-  return file;
+    page = await browser.newPage();
+    await page.setViewportSize({width:1280,height:900});
+    const response = await page.goto(`https://${domain}`, {waitUntil:'domcontentloaded',timeout:20000});
+    if (!response || response.status() >= 400) return null;
+    await wait(1000);
+    await page.screenshot({path:file,fullPage:false});
+    return file;
+  } catch { return null; }
+  finally { if (page) await page.close().catch(() => {}); }
 }
 
-async function run() {
-  const config = JSON.parse(fs.readFileSync(KEYWORDS_FILE, 'utf8'));
-  const history = loadHistory();
-  const date = today();
-
-  if (!fs.existsSync(SCREENSHOTS_DIR)) fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
-  const todayScreenshots = path.join(SCREENSHOTS_DIR, date);
-  if (!fs.existsSync(todayScreenshots)) fs.mkdirSync(todayScreenshots, { recursive: true });
-
-  const browser = await chromium.launch({ headless: true });
+async function collect(options = {}) {
+  const rootDir = options.rootDir || __dirname;
+  const now = options.now || (() => new Date());
+  const wait = options.wait || sleep;
+  const startedAt = now().toISOString();
+  const date = startedAt.slice(0,10);
+  const config = JSON.parse(fs.readFileSync(path.join(rootDir,'keywords.json'),'utf8'));
+  if (!Array.isArray(config.clients) || !config.clients.length || config.clients.some(c => !c.site || !Array.isArray(c.keywords) || !c.keywords.length)) {
+    throw new Error('No valid configured keyword set. Refusing to report success.');
+  }
+  const historyFile = path.join(rootDir,'rank-history.json');
+  const history = fs.existsSync(historyFile) ? JSON.parse(fs.readFileSync(historyFile,'utf8')) : {};
+  const screenshotDir = path.join(rootDir,'screenshots',date);
+  fs.mkdirSync(screenshotDir,{recursive:true});
   const results = {};
-
-  for (const client of config.clients) {
-    console.log(`\n=== ${client.name} ===`);
-    results[client.site] = { keywords: {}, screenshots: [] };
-
-    for (const keyword of client.keywords) {
-      console.log(`  Checking: "${keyword}"`);
-      const result = await searchGoogle(browser, keyword, client.site);
-      const prev = history[client.site]?.[keyword]?.rank ?? null;
-      const change = result.rank !== null && prev !== null ? prev - result.rank : null;
-
-      results[client.site].keywords[keyword] = {
-        rank: result.rank,
-        previousRank: prev,
-        change,
-        competitors: result.competitors,
-        checkedAt: new Date().toISOString()
-      };
-
-      const rankStr = result.rank ? `#${result.rank}` : 'Not in top 30';
-      const changeStr = change !== null ? (change > 0 ? `▲${change}` : change < 0 ? `▼${Math.abs(change)}` : '—') : 'new';
-      console.log(`    ${rankStr} ${changeStr}`);
-
-      await sleep(DELAY_MS);
-    }
-
-    // Weekly competitor screenshots (Mondays only, or forced via env)
-    const isMonday = new Date().getDay() === 1;
-    if (isMonday || process.env.FORCE_SCREENSHOTS === 'true') {
-      console.log(`  Taking competitor screenshots...`);
-      for (const competitor of client.competitors) {
-        const file = await screenshotCompetitor(browser, competitor, todayScreenshots);
-        results[client.site].screenshots.push({ domain: competitor, file });
-        console.log(`    Screenshotted: ${competitor}`);
-        await sleep(1000);
+  let browser, launchError;
+  try { browser = await (options.launch || (() => require('playwright').chromium.launch({headless:true})))(); }
+  catch (err) { launchError = failure('browser_launch_failed', String(err.message).slice(0,500)); }
+  try {
+    for (const client of config.clients) {
+      results[client.site] = {keywords:{},screenshots:[]};
+      for (const keyword of client.keywords) {
+        const result = launchError || await searchGoogle(browser,keyword,client.site,wait);
+        const previous = history[client.site]?.[keyword];
+        const prev = RankData.valid(previous) ? previous.rank : null;
+        const valid = RankData.valid(result);
+        results[client.site].keywords[keyword] = {...result,previousRank:prev,
+          previousCheckedAt:RankData.valid(previous) ? previous.checkedAt : null,
+          change:valid && result.rank !== null && prev !== null ? prev-result.rank : null,
+          checkedAt:now().toISOString(), source:'google', country:'us', language:'en', device:'desktop',
+          cityTargeting:null, requestedResultLimit:RESULTS_TO_CHECK};
+        console.log(`${client.site} | ${keyword} | ${RankData.label(result)}${result.error ? `: ${result.error.code}` : ''}`);
+        if (browser) await wait(DELAY_MS);
+      }
+      if (browser && (now().getUTCDay() === 1 || process.env.FORCE_SCREENSHOTS === 'true')) {
+        for (const domain of client.competitors || []) {
+          const file = await screenshotCompetitor(browser,domain,screenshotDir,wait);
+          if (file) results[client.site].screenshots.push({domain,file});
+          await wait(1000);
+        }
       }
     }
-  }
-
-  await browser.close();
-
-  // Merge into history
-  for (const [site, data] of Object.entries(results)) {
-    if (!history[site]) history[site] = {};
-    for (const [keyword, result] of Object.entries(data.keywords)) {
-      history[site][keyword] = { rank: result.rank, date };
-    }
-  }
-  saveHistory(history);
-
-  // Save today's snapshot
-  const snapshotFile = path.join(__dirname, `snapshot-${date}.json`);
-  fs.writeFileSync(snapshotFile, JSON.stringify(results, null, 2));
-  console.log(`\nSnapshot saved: ${snapshotFile}`);
-
-  return results;
+  } finally { if (browser) await browser.close().catch(err => console.warn(`Browser cleanup failed: ${err.message}`)); }
+  const summary = {...RankData.summarize(results),attemptId:options.attemptId,startedAt,finishedAt:now().toISOString(),date};
+  fs.writeFileSync(path.join(rootDir,`snapshot-${date}.json`),JSON.stringify(results,null,2));
+  fs.writeFileSync(path.join(rootDir,'latest-run.json'),JSON.stringify(summary,null,2));
+  const next = RankData.mergeHistory(history,results,date);
+  if (summary.successful) fs.writeFileSync(historyFile,JSON.stringify(next,null,2));
+  console.log(`Collection ${summary.status}: ${summary.successful}/${summary.total} checks returned usable result links.`);
+  return {results,summary};
 }
 
-run().catch(console.error);
+function currentAttempt(env = process.env) {
+  return env.GITHUB_RUN_ID ? `${env.GITHUB_RUN_ID}:${env.GITHUB_RUN_ATTEMPT || '1'}` : require('node:crypto').randomUUID();
+}
+async function run(options = {}) {
+  const attemptId = options.attemptId || currentAttempt();
+  try { return await collect({...options,attemptId}); }
+  catch (err) {
+    const rootDir = options.rootDir || __dirname;
+    const timestamp = (options.now || (() => new Date()))().toISOString();
+    const date = timestamp.slice(0,10);
+    // A fatal failure must replace attempt status, never masquerade as an earlier run.
+    fs.writeFileSync(path.join(rootDir,`snapshot-${date}.json`),'{}');
+    fs.writeFileSync(path.join(rootDir,'latest-run.json'),JSON.stringify({attemptId,date,startedAt:timestamp,finishedAt:timestamp,
+      status:'error',successful:0,total:0,failed:0,error:{code:'collection_failed',message:String(err.message).slice(0,500)}},null,2));
+    throw err;
+  }
+}
+
+if (require.main === module) {
+  require('dotenv').config();
+  run().then(({summary}) => { if (summary.status !== 'ok') process.exitCode = 1; })
+    .catch(err => {console.error(err);process.exitCode = 1;});
+}
+module.exports = {run,searchGoogle,classifyResults,matchesSite,screenshotCompetitor,extractGooglePage};

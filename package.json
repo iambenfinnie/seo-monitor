@@ -5,7 +5,9 @@
   "main": "tracker.js",
   "scripts": {
     "track": "node tracker.js",
-    "report": "node reporter.js"
+    "report": "node reporter.js",
+    "test": "node --test tests/*.test.js",
+    "test:browser": "node --test browser-tests/*.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

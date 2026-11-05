@@ -5,9 +5,15 @@ on:
     - cron: '0 13 * * *'  # 9 AM EST daily
   workflow_dispatch:       # allow manual runs from GitHub UI
 
+concurrency:
+  group: seo-rank-tracker
+  cancel-in-progress: false
+
 jobs:
   track:
-    runs-on: ubuntu-latest
+    # Playwright 1.59.1 supports Ubuntu 24.04, not 26.04.
+    # Pin the runner so ubuntu-latest migrations cannot break browser installation.
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       pages: write
@@ -22,27 +28,38 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test measurement safeguards
+        run: npm test
+
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      - name: Test organic extraction
+        run: npm run test:browser
+
       - name: Run rank tracker
+        id: track
         run: node tracker.js
 
       - name: Send report
+        if: ${{ !cancelled() && (steps.track.outcome == 'success' || steps.track.outcome == 'failure') }}
         run: node reporter.js
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
       - name: Commit rank history and snapshot
+        if: ${{ !cancelled() && (steps.track.outcome == 'success' || steps.track.outcome == 'failure') }}
         run: |
           git config user.name "seo-monitor[bot]"
           git config user.email "seo-monitor@noreply"
-          git add rank-history.json screenshots/ || true
+          git add rank-history.json latest-run.json
+          git add screenshots/ || true
           git add -f snapshot-*.json || true
           git diff --cached --quiet || git commit -m "chore: rank snapshot $(date +%Y-%m-%d)"
           git push
 
       - name: Deploy dashboard to GitHub Pages
+        if: ${{ !cancelled() && (steps.track.outcome == 'success' || steps.track.outcome == 'failure') }}
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
