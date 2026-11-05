@@ -1,0 +1,31 @@
+name: Validate SEO Monitor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/*.yml'
+      - 'tracker.js'
+      - 'reporter.js'
+      - 'dashboard/**'
+      - 'tests/**'
+      - 'browser-tests/**'
+      - 'package*.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm test
+      - run: npx playwright install chromium --with-deps
+      - run: npm run test:browser
