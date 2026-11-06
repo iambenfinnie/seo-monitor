@@ -56,7 +56,7 @@ async function searchGoogle(browser, keyword, targetSite, wait = sleep) {
     await page.setViewportSize({width:1280,height:900});
     const response = await page.goto(`https://www.google.com/search?q=${encodeURIComponent(keyword)}&num=${RESULTS_TO_CHECK}&hl=en&gl=us`,
       {waitUntil:'domcontentloaded',timeout:30000});
-    if (!response || response.status() >= 400) return failure('http_error', `Search returned HTTP ${response ? response.status() : 'unknown'}.`);
+    if (!response || response.status() >= 400) return {...failure('http_error', `Search returned HTTP ${response ? response.status() : 'unknown'}.`), httpStatus: response?.status() || null};
     await wait(1500);
     const observation = await page.evaluate(extractGooglePage);
     if (observation.blocked) return failure('blocked', 'Google returned a challenge. No ranking was measured.');
@@ -99,24 +99,30 @@ async function collect(options = {}) {
   const screenshotDir = path.join(rootDir,'screenshots',date);
   fs.mkdirSync(screenshotDir,{recursive:true});
   const results = {};
-  let browser, launchError;
+  let browser, launchError, stoppedReason;
   try { browser = await (options.launch || (() => require('playwright').chromium.launch({headless:true})))(); }
   catch (err) { launchError = failure('browser_launch_failed', String(err.message).slice(0,500)); }
   try {
     for (const client of config.clients) {
       results[client.site] = {keywords:{},screenshots:[]};
       for (const keyword of client.keywords) {
-        const result = launchError || await searchGoogle(browser,keyword,client.site,wait);
+        const skipped = Boolean(stoppedReason);
+        const result = skipped
+          ? {...failure('collection_stopped', `Not attempted: ${stoppedReason} Remaining Google queries were stopped; no ranking was measured.`), status:'skipped'}
+          : launchError || await searchGoogle(browser,keyword,client.site,wait);
+        if (!skipped && (['blocked','consent_required'].includes(result.error?.code) || [403,429].includes(result.httpStatus))) {
+          stoppedReason = result.error.message;
+        }
         const previous = history[client.site]?.[keyword];
         const prev = RankData.valid(previous) ? previous.rank : null;
         const valid = RankData.valid(result);
         results[client.site].keywords[keyword] = {...result,previousRank:prev,
           previousCheckedAt:RankData.valid(previous) ? previous.checkedAt : null,
           change:valid && result.rank !== null && prev !== null ? prev-result.rank : null,
-          checkedAt:now().toISOString(), source:'google', country:'us', language:'en', device:'desktop',
+          checkedAt:skipped || launchError ? null : now().toISOString(), recordedAt:now().toISOString(), attempted:!skipped && !launchError, source:'google', country:'us', language:'en', device:'desktop',
           cityTargeting:null, requestedResultLimit:RESULTS_TO_CHECK};
         console.log(`${client.site} | ${keyword} | ${RankData.label(result)}${result.error ? `: ${result.error.code}` : ''}`);
-        if (browser) await wait(DELAY_MS);
+        if (browser && !stoppedReason) await wait(DELAY_MS);
       }
       if (browser && (now().getUTCDay() === 1 || process.env.FORCE_SCREENSHOTS === 'true')) {
         for (const domain of client.competitors || []) {
@@ -127,7 +133,8 @@ async function collect(options = {}) {
       }
     }
   } finally { if (browser) await browser.close().catch(err => console.warn(`Browser cleanup failed: ${err.message}`)); }
-  const summary = {...RankData.summarize(results),attemptId:options.attemptId,startedAt,finishedAt:now().toISOString(),date};
+  const summary = {...RankData.summarize(results),attemptId:options.attemptId,startedAt,finishedAt:now().toISOString(),date,
+    report:{status:'pending',attemptId:options.attemptId,updatedAt:now().toISOString()}};
   fs.writeFileSync(path.join(rootDir,`snapshot-${date}.json`),JSON.stringify(results,null,2));
   fs.writeFileSync(path.join(rootDir,'latest-run.json'),JSON.stringify(summary,null,2));
   const next = RankData.mergeHistory(history,results,date);
@@ -149,7 +156,7 @@ async function run(options = {}) {
     // A fatal failure must replace attempt status, never masquerade as an earlier run.
     fs.writeFileSync(path.join(rootDir,`snapshot-${date}.json`),'{}');
     fs.writeFileSync(path.join(rootDir,'latest-run.json'),JSON.stringify({attemptId,date,startedAt:timestamp,finishedAt:timestamp,
-      status:'error',successful:0,total:0,failed:0,error:{code:'collection_failed',message:String(err.message).slice(0,500)}},null,2));
+      status:'error',successful:0,total:0,failed:0,skipped:0,report:{status:'pending',attemptId,updatedAt:timestamp},error:{code:'collection_failed',message:String(err.message).slice(0,500)}},null,2));
     throw err;
   }
 }
@@ -160,3 +167,4 @@ if (require.main === module) {
     .catch(err => {console.error(err);process.exitCode = 1;});
 }
 module.exports = {run,searchGoogle,classifyResults,matchesSite,screenshotCompetitor,extractGooglePage};
+

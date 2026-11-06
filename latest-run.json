@@ -6,5 +6,15 @@
   "attemptId": "42282864873:1",
   "startedAt": "2026-11-06T19:49:05.142Z",
   "finishedAt": "2026-11-06T19:50:48.544Z",
-  "date": "2026-11-06"
+  "date": "2026-11-06",
+  "report": {
+    "status": "failed",
+    "attemptId": "42282864873:1",
+    "updatedAt": "2026-11-06T19:50:48.823Z",
+    "error": {
+      "code": "sender_domain_unverified",
+      "message": "The configured sender domain is not verified in Resend."
+    },
+    "verifiedFrom": "https://github.com/iambenfinnie/seo-monitor/actions/runs/42282864873"
+  }
 }

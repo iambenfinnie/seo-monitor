@@ -24,3 +24,28 @@ test('real DOM with no organic titles fails closed',async()=>{
   const r=await extract('<div id="search"><a href="https://example.com">No organic title</a></div>');
   assert.equal(classifyResults(r.links,'example.com').status,'error');
 });
+
+test('dashboard renders collection and email failure with no external network',async()=>{
+  const fs=require('node:fs');const path=require('node:path');
+  const page=await browser.newPage({viewport:{width:390,height:844}});
+  const fixtures={
+    'rank-history.json':{},
+    'latest-run.json':{attemptId:'fixture:1',date:'2026-11-06',finishedAt:new Date().toISOString(),status:'error',successful:0,total:2,skipped:1,report:{attemptId:'fixture:1',status:'failed',error:{message:'The configured sender domain is not verified in Resend.'}}},
+    'snapshot-2026-11-06.json':{'example.com':{keywords:{first:{status:'error',rank:null,resultsChecked:0,error:{message:'Google returned a challenge.'}},second:{status:'skipped',rank:null,resultsChecked:0,error:{message:'Not attempted after challenge.'}}}}}
+  };
+  try {
+    await page.route('**/*',route=>{
+      const u=new URL(route.request().url());const name=u.pathname.split('/').at(-1);
+      if(u.hostname==='raw.githubusercontent.com' && Object.hasOwn(fixtures,name)) return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(fixtures[name])});
+      return route.abort();
+    });
+    await page.setContent(fs.readFileSync(path.join(__dirname,'../dashboard/index.html'),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,''));
+    await page.addScriptTag({path:path.join(__dirname,'../dashboard/rank-data.js')});
+    await page.addScriptTag({path:path.join(__dirname,'../dashboard/app.js')});
+    await page.getByText('Report not sent:',{exact:false}).waitFor();
+    assert.match(await page.locator('#collection-status').innerText(),/0\/2 usable checks; 1 not attempted/);
+    assert.match(await page.locator('#app').innerText(),/Not checked/);
+    assert.match(await page.locator('#report-status').innerText(),/not verified in Resend/);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'mobile page does not overflow horizontally');
+  } finally {await page.close();}
+});

@@ -36,3 +36,14 @@ npm run report
 The Actions runner is pinned to Ubuntu 24.04 for locked Playwright 1.59.1 compatibility. Tracking exits nonzero if any check fails; later workflow steps still publish truthful diagnostic results, email the existing recipient, and refresh the existing dashboard. The overall run remains failed. Reporting failures also exit nonzero. The daily schedule and report recipient remain unchanged.
 
 A manual verification must use **Run workflow** on the latest `main` commit. **Re-run jobs** on an older run reuses that run's original workflow and commit, so it does not test a newly pushed repair.
+
+
+## Collection and email blockers
+
+A Google challenge, consent interstitial, HTTP 403, or HTTP 429 stops the remaining Google requests in that run. Remaining keywords are `status: "skipped"`, with `attempted: false` and no `checkedAt`, rather than fabricated measurements. The existing daily schedule is unchanged; no CAPTCHA solving, proxies, fingerprint changes, or alternative Google scraping routes are used.
+
+`latest-run.json` also records report status for that exact attempt. `accepted` means Resend returned an acceptance receipt, **not confirmed inbox delivery**. Rejection, missing configuration, pending send, and uncertain transport outcome have separate labels on the dashboard. An accepted or uncertain send cannot be repeated for the same attempt. Missing email credentials cause reporting failure, even though a preview is printed. Provider error text and API keys are not saved to public status data.
+
+The sender and recipient remain `Ben@sevengensystems.com`. A Resend error saying the domain is not verified requires account configuration, not a code workaround: open Domains in the Resend account associated with the existing key, select `sevengensystems.com`, inspect the exact required SPF/DKIM DNS records, and verify those records at its authoritative DNS provider. Do not invent DNS values, overwrite existing mail records, switch sender identity, or change API keys simply to silence the error. New or expanded sending authorization requires explicit approval.
+
+For sustainable performance data, prefer authorized Search Console reads for properties the user already controls. Keep private analytics private and label Search Console position as average position, not a point-in-time SERP rank. A commercial SERP API is a separate optional integration that needs an approved provider, budget, scope, and credential setup before use. Neither route is enabled by this safeguard repair.

@@ -30,7 +30,7 @@ function buildReport(results, date = today(), latest = null) {
     <h2 style="border-bottom:2px solid #D4A017;padding-bottom:8px">SEO Rank Report — ${date}</h2>
   `;
 
-  const statusText = `Collection: ${summary.status}. Usable checks: ${summary.successful}/${summary.total}. Failed or unverified checks are not ranking results.`;
+  const statusText = `Collection: ${summary.status}. Usable checks: ${summary.successful}/${summary.total}. ${summary.notAttempted} not attempted. Failed, skipped or unverified checks are not ranking results.`;
   if (latest?.error) {
     text += `Collection error: ${latest.error.message}\n`;
     html += `<p>Collection error: ${escapeHtml(latest.error.message)}</p>`;
@@ -90,27 +90,44 @@ function buildReport(results, date = today(), latest = null) {
   return { text, html };
 }
 
-async function sendEmail(date, text, html) {
-  if (!process.env.RESEND_API_KEY) {
-    console.log('No RESEND_API_KEY — printing report:\n');
-    console.log(text);
-    return;
+function providerFailure(error) {
+  if (/domain is not verified/i.test(error?.message || '')) return {code:'sender_domain_unverified',message:'The configured sender domain is not verified in Resend.'};
+  if (['invalid_api_key','missing_api_key','restricted_api_key'].includes(error?.name)) return {code:'email_authentication_failed',message:'Resend rejected the configured API key or its permissions.'};
+  return {code:'email_rejected',message:'Resend rejected the report. Inspect the sender configuration and provider account.'};
+}
+async function sendEmail(date, text, html, options = {}) {
+  const env = options.env || process.env;
+  if (!env.RESEND_API_KEY) {
+    console.log('No RESEND_API_KEY; report not sent. Preview:\n' + text);
+    return {status:'not_configured',error:{code:'email_not_configured',message:'Email API key is not configured.'}};
   }
-
-  const { Resend } = require('resend');
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const { error } = await resend.emails.send({
-    from: 'SEO Monitor <Ben@sevengensystems.com>',
-    to: ['Ben@sevengensystems.com'],
-    subject: `SEO Ranks — ${date}`,
-    html,
-    text
-  });
-
-  if (error) {
-    throw new Error(`Email failed: ${error.message || JSON.stringify(error)}`);
-  } else {
-    console.log('Report emailed to Ben@sevengensystems.com');
+  try {
+    const send = options.send || (async payload => {
+      const {Resend} = require('resend');
+      return new Resend(env.RESEND_API_KEY).emails.send(payload);
+    });
+    const response = await send({
+      from:'SEO Monitor <Ben@sevengensystems.com>',
+      to:['Ben@sevengensystems.com'],
+      subject:`SEO Ranks — ${date}`, html, text
+    });
+    if (response?.error) {
+      const explicitRejections = new Set(['validation_error','missing_required_field','invalid_parameter','invalid_region',
+        'invalid_api_key','missing_api_key','restricted_api_key','daily_quota_exceeded','monthly_quota_exceeded',
+        'rate_limit_exceeded','invalid_idempotent_request']);
+      const error = response.error;
+      // The SDK returns application_error even for failed fetch/JSON parsing.
+      // An unrecognized error or 5xx may arrive after the provider accepted the email.
+      if (!explicitRejections.has(error.name) || Number(error.statusCode) >= 500) {
+        return {status:'unknown',error:{code:'send_outcome_unknown',message:'Email send outcome could not be confirmed. Do not retry this attempt automatically.'}};
+      }
+      return {status:'failed',error:providerFailure(error)};
+    }
+    if (!response?.data?.id) return {status:'unknown',error:{code:'send_outcome_unknown',message:'No provider acceptance receipt was returned. Do not retry this attempt automatically.'}};
+    return {status:'accepted'};
+  } catch {
+    // A transport failure may occur after acceptance. Do not claim non-delivery or retry.
+    return {status:'unknown',error:{code:'send_outcome_unknown',message:'Email send outcome could not be confirmed. Do not retry this attempt automatically.'}};
   }
 }
 
@@ -119,29 +136,40 @@ function validateAttempt(latest, env = process.env) {
     const expected = `${env.GITHUB_RUN_ID}:${env.GITHUB_RUN_ATTEMPT || '1'}`;
     if (latest?.attemptId !== expected) throw new Error('No snapshot from this workflow attempt; refusing to send an earlier report.');
   }
-  if (!latest || !/^\d{4}-\d{2}-\d{2}$/.test(latest.date) || !Number.isFinite(Date.parse(latest.finishedAt))) throw new Error('Missing or invalid collection metadata.');
+  if (!latest || typeof latest.attemptId !== 'string' || !latest.attemptId || !/^\d{4}-\d{2}-\d{2}$/.test(latest.date) || !Number.isFinite(Date.parse(latest.finishedAt))) throw new Error('Missing or invalid collection metadata.');
   if (Date.parse(latest.finishedAt) - Date.now() > 5 * 60 * 1000) throw new Error('Collection timestamp is in the future.');
   if (Date.now() - Date.parse(latest.finishedAt) > 60 * 60 * 1000) throw new Error('Latest collection is stale; refusing to email it as a new report.');
 }
-async function run() {
-  const latestFile = path.join(__dirname, 'latest-run.json');
-  const latest = fs.existsSync(latestFile) ? JSON.parse(fs.readFileSync(latestFile, 'utf8')) : null;
-  validateAttempt(latest);
-  const date = latest.date;
-  const snapshotFile = path.join(__dirname, `snapshot-${date}.json`);
-
-  if (!fs.existsSync(snapshotFile)) {
-    console.error(`No snapshot for ${date}. Run tracker.js first.`);
-    process.exit(1);
+async function run(options = {}) {
+  const rootDir = options.rootDir || __dirname;
+  const env = options.env || process.env;
+  const now = options.now || (() => new Date());
+  const latestFile = path.join(rootDir,'latest-run.json');
+  const latest = fs.existsSync(latestFile) ? JSON.parse(fs.readFileSync(latestFile,'utf8')) : null;
+  validateAttempt(latest,env);
+  if (latest.report?.attemptId === latest.attemptId && ['sending','accepted','unknown'].includes(latest.report.status)) {
+    throw new Error('This attempt already has a send or an uncertain outcome; refusing a duplicate email.');
   }
-
-  const results = JSON.parse(fs.readFileSync(snapshotFile, 'utf8'));
-  const { text, html } = buildReport(results, date, latest);
-  await sendEmail(date, text, html);
+  const date = latest.date;
+  const snapshotFile = path.join(rootDir,`snapshot-${date}.json`);
+  if (!fs.existsSync(snapshotFile)) throw new Error(`No snapshot for ${date}. Run tracker.js first.`);
+  const results = JSON.parse(fs.readFileSync(snapshotFile,'utf8'));
+  const {text,html} = buildReport(results,date,latest);
+  function saveReport(report) {
+    latest.report = {...report,attemptId:latest.attemptId,updatedAt:now().toISOString()};
+    fs.writeFileSync(latestFile,JSON.stringify(latest,null,2));
+  }
+  saveReport({status:'sending'});
+  const result = await sendEmail(date,text,html,{env,send:options.send});
+  saveReport(result);
+  if (result.status !== 'accepted') throw new Error(RankData.reportStatusText(latest));
+  console.log('Report accepted by Resend. Inbox delivery is not verified.');
+  return result;
 }
 
 if (require.main === module) {
   require('dotenv').config();
   run().catch(err => { console.error(err); process.exitCode = 1; });
 }
-module.exports = {buildReport, sendEmail, validateAttempt};
+module.exports = {buildReport, sendEmail, validateAttempt, run, providerFailure};
+

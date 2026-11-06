@@ -2,7 +2,7 @@ name: Daily SEO Rank Tracker
 
 on:
   schedule:
-    - cron: '0 13 * * *'  # 9 AM EST daily
+    - cron: '0 13 * * *'  # 13:00 UTC daily; 8 AM EST / 9 AM EDT
   workflow_dispatch:       # allow manual runs from GitHub UI
 
 concurrency:
@@ -65,3 +65,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dashboard
           force_orphan: true
+
