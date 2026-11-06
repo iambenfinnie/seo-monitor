@@ -24,8 +24,9 @@ async function render() {
     : dates.length ? `Stored data through: ${dates.at(-1)}` : 'No verified collection timestamp';
   const stale = latest && Date.now() - Date.parse(latest.finishedAt) > 36*60*60*1000;
   document.getElementById('collection-status').textContent = latest
-    ? `${stale ? 'Stale collection. ' : ''}Latest attempt: ${latest.status}; ${latest.successful}/${latest.total} usable checks. ${latest.error ? latest.error.message + ' ' : ''}${snapshot ? 'Failed checks do not establish rankings.' : 'Snapshot unavailable; showing stored history, not current ranks.'}`
+    ? `${stale ? 'Stale collection. ' : ''}Latest attempt: ${latest.status}; ${latest.successful}/${latest.total} usable checks; ${latest.notAttempted ?? latest.skipped ?? 0} not attempted. ${latest.error ? latest.error.message + ' ' : ''}${snapshot ? 'Failed checks do not establish rankings.' : 'Snapshot unavailable; showing stored history, not current ranks.'}`
     : 'Collection status unavailable. Legacy records lack validation and are not reliable ranking evidence.';
+  document.getElementById('report-status').textContent = RankData.reportStatusText(latest);
   if (!snapshot && !history) { app.innerHTML = '<p class="no-data">Rank data could not be loaded.</p>'; return; }
   let html = '';
   for (const [site,data] of Object.entries(snapshot || history)) {
@@ -40,3 +41,4 @@ async function render() {
   app.innerHTML = html;
 }
 render().catch(() => { document.getElementById('collection-status').textContent = 'Unable to render collection data; rankings are unknown.'; });
+
