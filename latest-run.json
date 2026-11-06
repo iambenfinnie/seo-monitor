@@ -1,0 +1,10 @@
+{
+  "total": 20,
+  "successful": 0,
+  "failed": 20,
+  "status": "error",
+  "attemptId": "42282864873:1",
+  "startedAt": "2026-11-06T19:49:05.142Z",
+  "finishedAt": "2026-11-06T19:50:48.544Z",
+  "date": "2026-11-06"
+}
