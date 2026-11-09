@@ -1,0 +1,494 @@
+{
+  "seviervillelandclearing.com": {
+    "keywords": {
+      "land clearing Sevierville TN": {
+        "status": "error",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "blocked",
+          "message": "Google returned a challenge. No ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": "2026-11-09T22:50:43.336Z",
+        "recordedAt": "2026-11-09T22:50:43.336Z",
+        "attempted": true,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "forestry mulching Sevierville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:43.337Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "lot clearing Sevierville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:43.337Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "land clearing Pigeon Forge TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:43.337Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "land clearing Gatlinburg TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:43.337Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "land clearing Sevier County TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:43.337Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "brush clearing Sevier County TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:43.337Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "cabin lot clearing Smoky Mountains TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:43.337Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "site preparation Sevierville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:43.337Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "bush hogging Sevierville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:43.337Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      }
+    },
+    "screenshots": [
+      {
+        "domain": "seviertree.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/seviertree_com.png"
+      },
+      {
+        "domain": "gmlandsolutions.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/gmlandsolutions_com.png"
+      },
+      {
+        "domain": "tjsforestrymulching.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/tjsforestrymulching_com.png"
+      },
+      {
+        "domain": "dirtdiggerstn.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/dirtdiggerstn_com.png"
+      },
+      {
+        "domain": "americanexcavatinghauling.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/americanexcavatinghauling_com.png"
+      }
+    ]
+  },
+  "knoxvillelandclearing.com": {
+    "keywords": {
+      "land clearing Knoxville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.497Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "forestry mulching Knoxville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.497Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "lot clearing Knoxville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.497Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "land clearing Maryville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.497Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "land clearing Oak Ridge TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.497Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "land clearing Farragut TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.497Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "brush clearing Knoxville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.497Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "site preparation Knoxville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.497Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "land clearing Blount County TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.497Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      },
+      "land clearing cost Knoxville TN": {
+        "status": "skipped",
+        "rank": null,
+        "competitors": {},
+        "resultsChecked": 0,
+        "error": {
+          "code": "collection_stopped",
+          "message": "Not attempted: Google returned a challenge. No ranking was measured. Remaining Google queries were stopped; no ranking was measured."
+        },
+        "previousRank": null,
+        "previousCheckedAt": null,
+        "change": null,
+        "checkedAt": null,
+        "recordedAt": "2026-11-09T22:50:59.498Z",
+        "attempted": false,
+        "source": "google",
+        "country": "us",
+        "language": "en",
+        "device": "desktop",
+        "cityTargeting": null,
+        "requestedResultLimit": 30
+      }
+    },
+    "screenshots": [
+      {
+        "domain": "gmlandsolutions.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/gmlandsolutions_com.png"
+      },
+      {
+        "domain": "legacylandclearingllc.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/legacylandclearingllc_com.png"
+      },
+      {
+        "domain": "forestrymulchingpros.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/forestrymulchingpros_com.png"
+      },
+      {
+        "domain": "getlandcleared.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/getlandcleared_com.png"
+      },
+      {
+        "domain": "demoknox.com",
+        "file": "/home/runner/work/seo-monitor/seo-monitor/screenshots/2026-11-09/demoknox_com.png"
+      }
+    ]
+  }
+}
