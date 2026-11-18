@@ -5,17 +5,17 @@
   "skipped": 19,
   "notAttempted": 19,
   "status": "error",
-  "attemptId": "44180120041:1",
-  "startedAt": "2026-11-17T21:29:20.420Z",
-  "finishedAt": "2026-11-17T21:29:22.991Z",
-  "date": "2026-11-17",
+  "attemptId": "44397357477:1",
+  "startedAt": "2026-11-18T21:10:14.950Z",
+  "finishedAt": "2026-11-18T21:10:17.326Z",
+  "date": "2026-11-18",
   "report": {
     "status": "failed",
     "error": {
       "code": "sender_domain_unverified",
       "message": "The configured sender domain is not verified in Resend."
     },
-    "attemptId": "44180120041:1",
-    "updatedAt": "2026-11-17T21:29:23.253Z"
+    "attemptId": "44397357477:1",
+    "updatedAt": "2026-11-18T21:10:17.597Z"
   }
 }
